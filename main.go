@@ -44,42 +44,21 @@ func drawCriterBody(screen *ebiten.Image, counter int) {
 	direction := -PI / 2
 	size := float64(100.0)
 
-	points := make([]point, npoints)
-
-	indexToPoint := func(i int) (float32, float32) {
-		return float32(points[i].X), float32(points[i].Y)
+	indexToPoint := func(i int, counter int) (float32, float32) {
+		change := float64(30)
+		return float32(center.X + (size+change*math.Sin(float64(counter)*2*math.Pi/float64(maxCounter(i))))*math.Cos(direction-float64(2*i+1)*PI/8)),
+			float32(center.Y + (size+change*math.Sin(float64(counter)*2*math.Pi/float64(maxCounter(i))))*math.Sin(direction-float64(2*i+1)*PI/8))
 	}
-
-	//_size := func(counter int) float64 {
-	//	return size + size*0.1*math.Sin(float64(counter)*2*PI/float64(100))
-	//}
-	// Body
-	points[0] = point{X: center.X + size*math.Cos(direction-PI/8), Y: center.Y + size*math.Sin(direction-PI/8)}
-	points[1] = point{X: center.X + size*math.Cos(direction-3*PI/8), Y: center.Y + size*math.Sin(direction-3*PI/8)}
-	points[2] = point{X: center.X + size*math.Cos(direction-5*PI/8), Y: center.Y + size*math.Sin(direction-5*PI/8)}
-	points[3] = point{X: center.X + size*math.Cos(direction-7*PI/8), Y: center.Y + size*math.Sin(direction-7*PI/8)}
-	points[4] = point{X: center.X + size*math.Cos(direction+7*PI/8), Y: center.Y + size*math.Sin(direction+7*PI/8)}
-	points[5] = point{X: center.X + size*math.Cos(direction+5*PI/8), Y: center.Y + size*math.Sin(direction+5*PI/8)}
-	points[6] = point{X: center.X + size*math.Cos(direction+3*PI/8), Y: center.Y + size*math.Sin(direction+3*PI/8)}
-	points[7] = point{X: center.X + size*math.Cos(direction+PI/8), Y: center.Y + size*math.Sin(direction+PI/8)}
-
-	//points[1] = point{X: center.X + _size(counter)*math.Cos(PI/8)*math.Cos(direction-PI/8), Y: center.X + _size(counter)*math.Cos(PI/8)*math.Sin(direction-PI/8)}
-	//points[3] = point{X: center.X + _size(counter)*math.Cos(3*PI/4)*math.Cos(direction+5*PI/8), Y: center.X + _size(counter)*math.Cos(3*PI/4)*math.Sin(direction+5*PI/8)}
-	//points[5] = point{X: center.X + _size(counter)*math.Cos(3*PI/4)*math.Cos(direction-5*PI/8), Y: center.X + _size(counter)*math.Cos(3*PI/4)*math.Sin(direction-5*PI/8)}
-	//points[7] = point{X: center.X + _size(counter)*math.Cos(PI/8)*math.Cos(direction+PI/8), Y: center.X + _size(counter)*math.Cos(PI/8)*math.Sin(direction+PI/8)}
 
 	for i := 0; i < npoints; i++ {
 		if i == 0 {
-			path.MoveTo(indexToPoint(i))
+			path.MoveTo(indexToPoint(i, 0))
 			continue
 		}
-		cpx0, cpy0 := indexToPoint(i - 1)
-		x, y := indexToPoint(i)
-		cpx1, cpy1 := x, y
-		//cpx0 += 10
-		//cpx1 -= 10
-		//path.CubicTo(cpx0, cpy0, cpx1, cpy1, x, y)
-		path.QuadTo(cpx0, cpy0, cpx1, cpy1)
+		cpx0, cpy0 := indexToPoint(i-1, counter)
+		cpx1, cpy1 := indexToPoint(i, counter)
+		cpx2, cpy2 := indexToPoint(i, 0)
+		path.CubicTo(cpx0, cpy0, cpx1, cpy1, cpx2, cpy2)
 	}
 
 	op := &ebiten.DrawTrianglesOptions{
@@ -99,10 +78,10 @@ func drawCriterBody(screen *ebiten.Image, counter int) {
 func drawEyes(screen *ebiten.Image, side, size, bg float64, counter int) {
 	var path vector.Path
 	center := point{X: 150, Y: 150}
-	dist := 75.0
+	dist := 90.0
 	direction := -PI / 2
 
-	path.Arc(float32(center.X+dist*math.Cos(direction+side*PI/8)), float32(center.Y+dist*math.Sin(direction+side*PI/8)), float32(size), float32(0), float32(2*PI), vector.Clockwise)
+	path.Arc(float32(center.X-(size-dist)*math.Cos(direction+side*PI/12)), float32(center.Y-(size-dist)*math.Sin(direction+side*PI/12)), float32(size), float32(0), float32(2*PI), vector.Clockwise)
 
 	op := &ebiten.DrawTrianglesOptions{
 		FillRule: ebiten.EvenOdd,

@@ -1,7 +1,6 @@
 package cell
 
 import (
-	"image"
 	"math"
 	"math/rand"
 	"time"
@@ -28,11 +27,9 @@ func addVector(center point.Point, dist, direction float64) (x, y float32) {
 	return float32(center.X) + acX, float32(center.Y) + acY
 }
 
-func (c *Cell) drawCellBody(screen *ebiten.Image, center point.Point, direction, size float64, counter int) {
+func (c *Cell) drawCellBody(screen *ebiten.Image, center point.Point, direction, size float64, counter int, emptySubImage *ebiten.Image) {
 	var path vector.Path
 	npoints := 16
-	emptyImage := ebiten.NewImage(3, 3)
-	emptySubImage := emptyImage.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
 
 	indexToDirection := func(i int) float64 {
 		return direction - float64(2*i+1)*math.Pi/float64(npoints)
@@ -66,10 +63,8 @@ func (c *Cell) drawCellBody(screen *ebiten.Image, center point.Point, direction,
 	screen.DrawTriangles(vs, is, emptySubImage, op)
 }
 
-func (c *Cell) drawEyes(screen *ebiten.Image, center point.Point, direction, dist, side, size, bg float64, counter int) {
+func (c *Cell) drawEyes(screen *ebiten.Image, center point.Point, direction, dist, side, size, bg float64, counter int, emptySubImage *ebiten.Image) {
 	var path vector.Path
-	emptyImage := ebiten.NewImage(3, 3)
-	emptySubImage := emptyImage.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
 
 	randomizedFloat64 := func(in float64) float64 {
 		return in + rand.Float64()*2
@@ -110,10 +105,10 @@ func NewCell(center point.Point) *Cell {
 	return c
 }
 
-func (c *Cell) DrawCell(screen *ebiten.Image, counter int) {
-	c.drawCellBody(screen, c.center, c.direction, c.size, counter)
-	c.drawEyes(screen, c.center, c.direction, c.size*0.9, -1, c.size*0.1, 0xff, counter)
-	c.drawEyes(screen, c.center, c.direction, c.size*0.9, -1, c.size*0.05, 0x00, counter)
-	c.drawEyes(screen, c.center, c.direction, c.size*0.9, 1, c.size*0.1, 0xff, counter)
-	c.drawEyes(screen, c.center, c.direction, c.size*0.9, 1, c.size*0.05, 0x00, counter)
+func (c *Cell) DrawCell(screen *ebiten.Image, counter int, emptySubImage *ebiten.Image) {
+	c.drawCellBody(screen, c.center, c.direction, c.size, counter, emptySubImage)
+	c.drawEyes(screen, c.center, c.direction, c.size*0.9, -1, c.size*0.1, 0xff, counter, emptySubImage)
+	c.drawEyes(screen, c.center, c.direction, c.size*0.9, -1, c.size*0.05, 0x00, counter, emptySubImage)
+	c.drawEyes(screen, c.center, c.direction, c.size*0.9, 1, c.size*0.1, 0xff, counter, emptySubImage)
+	c.drawEyes(screen, c.center, c.direction, c.size*0.9, 1, c.size*0.05, 0x00, counter, emptySubImage)
 }

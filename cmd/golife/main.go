@@ -1,7 +1,6 @@
 package main
 
 import (
-	"image/color"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -15,9 +14,6 @@ const (
 )
 
 func main() {
-	emptyImage := ebiten.NewImage(3, 3)
-	emptyImage.Fill(color.White)
-
 	g := game.New(ScreenWidth, ScreenHeight)
 
 	ebiten.SetWindowSize(ScreenWidth, ScreenHeight)

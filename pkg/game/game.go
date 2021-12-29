@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"image"
 	"image/color"
 	"math/rand"
 	"time"
@@ -12,7 +13,13 @@ import (
 	"github.com/jtbonhomme/golife/pkg/cell"
 )
 
+var (
+	emptyImage    = ebiten.NewImage(3, 3)
+	emptySubImage = emptyImage.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
+)
+
 func init() {
+	emptyImage.Fill(color.White)
 	rand.Seed(time.Now().UnixNano())
 }
 
@@ -41,7 +48,7 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.White)
 	for _, c := range g.c {
-		c.DrawCell(screen, g.counter)
+		c.DrawCell(screen, g.counter, emptySubImage)
 	}
 
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f\nFPS: %0.2f\nCounter: %d", ebiten.CurrentTPS(), ebiten.CurrentFPS(), g.counter))

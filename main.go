@@ -6,6 +6,8 @@ import (
 	"image/color"
 	"log"
 	"math"
+	"math/rand"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -19,12 +21,12 @@ var (
 
 func init() {
 	emptyImage.Fill(color.White)
+	rand.Seed(time.Now().UnixNano())
 }
 
 const (
-	screenWidth  int     = 640
-	screenHeight int     = 480
-	criterSize   float64 = 100.0
+	screenWidth  int = 640
+	screenHeight int = 480
 )
 
 func maxCounter(index int) int {
@@ -47,17 +49,15 @@ func addVector(center point, dist, direction float64) (x, y float32) {
 	return float32(center.X) + acX, float32(center.Y) + acY
 }
 
-func drawCriterBody(screen *ebiten.Image, counter int) {
+func drawCriterBody(screen *ebiten.Image, center point, direction, size float64, counter int) {
 	var path vector.Path
 	npoints := 16
-	center := point{X: 150, Y: 150}
-	direction := -PI / 2
 
 	indexToDirection := func(i int) float64 {
-		return direction - float64(2*i+1)*PI/16
+		return direction - float64(2*i+1)*PI/float64(npoints)
 	}
 	indexToDist := func(i, counter int) float64 {
-		return criterSize + 10.0*math.Sin(float64(counter)*2*PI/float64(maxCounter(i)))
+		return size + size*0.1*math.Sin(float64(counter)*2*PI/float64(maxCounter(i)))
 	}
 
 	for i := 0; i <= npoints; i++ {
@@ -85,13 +85,14 @@ func drawCriterBody(screen *ebiten.Image, counter int) {
 	screen.DrawTriangles(vs, is, emptySubImage, op)
 }
 
-func drawEyes(screen *ebiten.Image, side, size, bg float64, counter int) {
+func drawEyes(screen *ebiten.Image, center point, direction, dist, side, size, bg float64, counter int) {
 	var path vector.Path
-	center := point{X: 150, Y: 150}
-	dist := 90.0
-	direction := -PI / 2
 
-	cpx0, cpy0 := addVector(center, dist-size, direction+side*PI/12)
+	randomizedFloat64 := func(in float64) float64 {
+		return in + rand.Float64()*2
+	}
+
+	cpx0, cpy0 := addVector(center, dist-randomizedFloat64(size), direction+side*PI/randomizedFloat64(12))
 
 	path.Arc(cpx0, cpy0, float32(size), float32(0), float32(2*PI), vector.Clockwise)
 
@@ -110,11 +111,14 @@ func drawEyes(screen *ebiten.Image, side, size, bg float64, counter int) {
 }
 
 func drawCriter(screen *ebiten.Image, counter int) {
-	drawCriterBody(screen, counter)
-	drawEyes(screen, -1, 15, 0xff, counter)
-	drawEyes(screen, -1, 5, 0x00, counter)
-	drawEyes(screen, 1, 15, 0xff, counter)
-	drawEyes(screen, 1, 5, 0x00, counter)
+	center := point{X: 150, Y: 150}
+	direction := -PI / 2
+	criterSize := 40.0
+	drawCriterBody(screen, center, direction, criterSize, counter)
+	drawEyes(screen, center, direction, criterSize*0.9, -1, criterSize*0.1, 0xff, counter)
+	drawEyes(screen, center, direction, criterSize*0.9, -1, criterSize*0.05, 0x00, counter)
+	drawEyes(screen, center, direction, criterSize*0.9, 1, criterSize*0.1, 0xff, counter)
+	drawEyes(screen, center, direction, criterSize*0.9, 1, criterSize*0.05, 0x00, counter)
 }
 
 type Game struct {

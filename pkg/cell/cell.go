@@ -8,6 +8,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/jtbonhomme/golife/internal/point"
+	color "github.com/lucasb-eyer/go-colorful"
+	log "github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -49,6 +51,10 @@ func (c *Cell) drawCellBody(screen *ebiten.Image, center point.Point, direction,
 		path.CubicTo(cpx0, cpy0, cpx1, cpy1, cpx2, cpy2)
 	}
 
+	// Get the color (120° is green, 0° is red)
+	cellColor := color.HSLuv(c.size*360/50, 1, 0.5)
+	log.Infof("cell size %f -> %#v", c.size, cellColor)
+
 	op := &ebiten.DrawTrianglesOptions{
 		FillRule: ebiten.EvenOdd,
 	}
@@ -56,9 +62,9 @@ func (c *Cell) drawCellBody(screen *ebiten.Image, center point.Point, direction,
 	for i := range vs {
 		vs[i].SrcX = 1
 		vs[i].SrcY = 1
-		vs[i].ColorR = 0x22 / float32(0xff)
-		vs[i].ColorG = 0x33 / float32(0xff)
-		vs[i].ColorB = 0x66 / float32(0xff)
+		vs[i].ColorR = float32(cellColor.R) // / float32(0xff)
+		vs[i].ColorG = float32(cellColor.G) // / float32(0xff)
+		vs[i].ColorB = float32(cellColor.B) // / float32(0xff)
 	}
 	screen.DrawTriangles(vs, is, emptySubImage, op)
 }
@@ -95,11 +101,11 @@ type Cell struct {
 	rnd10     int32
 }
 
-func NewCell(center point.Point) *Cell {
+func New(center point.Point) *Cell {
 	c := &Cell{
 		center:    center,
 		direction: rand.Float64() * 2 * math.Pi,
-		size:      20.0 + rand.Float64()*20.0,
+		size:      5.0 + rand.Float64()*45.0,
 		rnd10:     rand.Int31n(10),
 	}
 	return c

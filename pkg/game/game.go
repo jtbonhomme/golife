@@ -34,7 +34,7 @@ func New(w, h int) *Game {
 	g := &Game{counter: 0, screenWidth: w, screenHeight: h}
 	g.c = []*cell.Cell{}
 	for i := 0; i < 10; i++ {
-		g.c = append(g.c, cell.NewCell(point.Point{X: float64(rand.Int31n(int32(w))), Y: float64(rand.Int31n(int32(h)))}))
+		g.c = append(g.c, cell.New(point.Point{X: float64(rand.Int31n(int32(w))), Y: float64(rand.Int31n(int32(h)))}))
 	}
 
 	return g

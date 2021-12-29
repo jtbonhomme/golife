@@ -22,8 +22,9 @@ func init() {
 }
 
 const (
-	screenWidth  = 640
-	screenHeight = 480
+	screenWidth  int     = 640
+	screenHeight int     = 480
+	criterSize   float64 = 100.0
 )
 
 func maxCounter(index int) int {
@@ -37,27 +38,36 @@ type point struct {
 
 const PI float64 = math.Pi
 
+func angularToCartesian(dist, direction float64) (x, y float32) {
+	return float32(dist * math.Cos(direction)), float32(dist * math.Sin(direction))
+}
+
+func addVector(center point, dist, direction float64) (x, y float32) {
+	acX, acY := angularToCartesian(dist, direction)
+	return float32(center.X) + acX, float32(center.Y) + acY
+}
+
 func drawCriterBody(screen *ebiten.Image, counter int) {
 	var path vector.Path
-	npoints := 8
+	npoints := 16
 	center := point{X: 150, Y: 150}
 	direction := -PI / 2
-	size := float64(100.0)
 
-	indexToPoint := func(i int, counter int) (float32, float32) {
-		change := float64(30)
-		return float32(center.X + (size+change*math.Sin(float64(counter)*2*math.Pi/float64(maxCounter(i))))*math.Cos(direction-float64(2*i+1)*PI/8)),
-			float32(center.Y + (size+change*math.Sin(float64(counter)*2*math.Pi/float64(maxCounter(i))))*math.Sin(direction-float64(2*i+1)*PI/8))
+	indexToDirection := func(i int) float64 {
+		return direction - float64(2*i+1)*PI/16
+	}
+	indexToDist := func(i, counter int) float64 {
+		return criterSize + 10.0*math.Sin(float64(counter)*2*PI/float64(maxCounter(i)))
 	}
 
-	for i := 0; i < npoints; i++ {
+	for i := 0; i <= npoints; i++ {
 		if i == 0 {
-			path.MoveTo(indexToPoint(i, 0))
+			path.MoveTo(addVector(center, indexToDist(i, counter), indexToDirection(i)))
 			continue
 		}
-		cpx0, cpy0 := indexToPoint(i-1, counter)
-		cpx1, cpy1 := indexToPoint(i, counter)
-		cpx2, cpy2 := indexToPoint(i, 0)
+		cpx0, cpy0 := addVector(center, indexToDist(i, counter), indexToDirection(i-1)-PI/16)
+		cpx1, cpy1 := addVector(center, indexToDist(i, counter), indexToDirection(i)+PI/16)
+		cpx2, cpy2 := addVector(center, indexToDist(i, counter), indexToDirection(i))
 		path.CubicTo(cpx0, cpy0, cpx1, cpy1, cpx2, cpy2)
 	}
 
@@ -81,7 +91,9 @@ func drawEyes(screen *ebiten.Image, side, size, bg float64, counter int) {
 	dist := 90.0
 	direction := -PI / 2
 
-	path.Arc(float32(center.X-(size-dist)*math.Cos(direction+side*PI/12)), float32(center.Y-(size-dist)*math.Sin(direction+side*PI/12)), float32(size), float32(0), float32(2*PI), vector.Clockwise)
+	cpx0, cpy0 := addVector(center, dist-size, direction+side*PI/12)
+
+	path.Arc(cpx0, cpy0, float32(size), float32(0), float32(2*PI), vector.Clockwise)
 
 	op := &ebiten.DrawTrianglesOptions{
 		FillRule: ebiten.EvenOdd,

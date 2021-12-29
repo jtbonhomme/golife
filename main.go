@@ -33,31 +33,29 @@ func maxCounter(index int) int {
 	return 128 + (17*index+32)%64
 }
 
-type point struct {
+type Point struct {
 	X float64
 	Y float64
 }
-
-const PI float64 = math.Pi
 
 func angularToCartesian(dist, direction float64) (x, y float32) {
 	return float32(dist * math.Cos(direction)), float32(dist * math.Sin(direction))
 }
 
-func addVector(center point, dist, direction float64) (x, y float32) {
+func addVector(center Point, dist, direction float64) (x, y float32) {
 	acX, acY := angularToCartesian(dist, direction)
 	return float32(center.X) + acX, float32(center.Y) + acY
 }
 
-func drawCriterBody(screen *ebiten.Image, center point, direction, size float64, counter int) {
+func drawCriterBody(screen *ebiten.Image, center Point, direction, size float64, counter int) {
 	var path vector.Path
 	npoints := 16
 
 	indexToDirection := func(i int) float64 {
-		return direction - float64(2*i+1)*PI/float64(npoints)
+		return direction - float64(2*i+1)*math.Pi/float64(npoints)
 	}
 	indexToDist := func(i, counter int) float64 {
-		return size + size*0.1*math.Sin(float64(counter)*2*PI/float64(maxCounter(i)))
+		return size + size*0.1*math.Sin(float64(counter)*2*math.Pi/float64(maxCounter(i)))
 	}
 
 	for i := 0; i <= npoints; i++ {
@@ -65,8 +63,8 @@ func drawCriterBody(screen *ebiten.Image, center point, direction, size float64,
 			path.MoveTo(addVector(center, indexToDist(i, counter), indexToDirection(i)))
 			continue
 		}
-		cpx0, cpy0 := addVector(center, indexToDist(i, counter), indexToDirection(i-1)-PI/16)
-		cpx1, cpy1 := addVector(center, indexToDist(i, counter), indexToDirection(i)+PI/16)
+		cpx0, cpy0 := addVector(center, indexToDist(i, counter), indexToDirection(i-1)-math.Pi/16)
+		cpx1, cpy1 := addVector(center, indexToDist(i, counter), indexToDirection(i)+math.Pi/16)
 		cpx2, cpy2 := addVector(center, indexToDist(i, counter), indexToDirection(i))
 		path.CubicTo(cpx0, cpy0, cpx1, cpy1, cpx2, cpy2)
 	}
@@ -85,16 +83,16 @@ func drawCriterBody(screen *ebiten.Image, center point, direction, size float64,
 	screen.DrawTriangles(vs, is, emptySubImage, op)
 }
 
-func drawEyes(screen *ebiten.Image, center point, direction, dist, side, size, bg float64, counter int) {
+func drawEyes(screen *ebiten.Image, center Point, direction, dist, side, size, bg float64, counter int) {
 	var path vector.Path
 
 	randomizedFloat64 := func(in float64) float64 {
 		return in + rand.Float64()*2
 	}
 
-	cpx0, cpy0 := addVector(center, dist-randomizedFloat64(size), direction+side*PI/randomizedFloat64(12))
+	cpx0, cpy0 := addVector(center, dist-randomizedFloat64(size), direction+side*math.Pi/randomizedFloat64(12))
 
-	path.Arc(cpx0, cpy0, float32(size), float32(0), float32(2*PI), vector.Clockwise)
+	path.Arc(cpx0, cpy0, float32(size), float32(0), float32(2*math.Pi), vector.Clockwise)
 
 	op := &ebiten.DrawTrianglesOptions{
 		FillRule: ebiten.EvenOdd,
@@ -110,19 +108,27 @@ func drawEyes(screen *ebiten.Image, center point, direction, dist, side, size, b
 	screen.DrawTriangles(vs, is, emptySubImage, op)
 }
 
-func drawCriter(screen *ebiten.Image, counter int) {
-	center := point{X: 150, Y: 150}
-	direction := -PI / 2
-	criterSize := 40.0
-	drawCriterBody(screen, center, direction, criterSize, counter)
-	drawEyes(screen, center, direction, criterSize*0.9, -1, criterSize*0.1, 0xff, counter)
-	drawEyes(screen, center, direction, criterSize*0.9, -1, criterSize*0.05, 0x00, counter)
-	drawEyes(screen, center, direction, criterSize*0.9, 1, criterSize*0.1, 0xff, counter)
-	drawEyes(screen, center, direction, criterSize*0.9, 1, criterSize*0.05, 0x00, counter)
+type Criter struct {
+	center    Point
+	direction float64
+	size      float64
+}
+
+func NewCriter(center Point, direction, size float64) *Criter {
+	return &Criter{center, direction, size}
+}
+
+func (c *Criter) DrawCriter(screen *ebiten.Image, counter int) {
+	drawCriterBody(screen, c.center, c.direction, c.size, counter)
+	drawEyes(screen, c.center, c.direction, c.size*0.9, -1, c.size*0.1, 0xff, counter)
+	drawEyes(screen, c.center, c.direction, c.size*0.9, -1, c.size*0.05, 0x00, counter)
+	drawEyes(screen, c.center, c.direction, c.size*0.9, 1, c.size*0.1, 0xff, counter)
+	drawEyes(screen, c.center, c.direction, c.size*0.9, 1, c.size*0.05, 0x00, counter)
 }
 
 type Game struct {
 	counter int
+	c       []*Criter
 }
 
 func (g *Game) Update() error {
@@ -132,7 +138,9 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.White)
-	drawCriter(screen, g.counter)
+	for _, c := range g.c {
+		c.DrawCriter(screen, g.counter)
+	}
 
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f\nFPS: %0.2f\nCounter: %d", ebiten.CurrentTPS(), ebiten.CurrentFPS(), g.counter))
 }
@@ -143,6 +151,11 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 func main() {
 	g := &Game{counter: 0}
+
+	g.c = []*Criter{}
+	for i := 0; i < 10; i++ {
+		g.c = append(g.c, NewCriter(Point{X: float64(rand.Int31n(640)), Y: float64(rand.Int31n(480))}, rand.Float64()*2*math.Pi, 20.0+rand.Float64()*20.0))
+	}
 
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Vector (Ebiten Demo)")

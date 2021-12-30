@@ -41,6 +41,9 @@ type Cell struct {
 
 	lastEnergyBurn int
 	lastGrowth     int
+
+	detect    func(vector.Vector2D, float64) []*Cell
+	neighbors []*Cell
 }
 
 func maxVelocity(size float64) float64 {
@@ -51,7 +54,7 @@ func maxVelocity(size float64) float64 {
 	return vel
 }
 
-func New(position vector.Vector2D, w, h int) *Cell {
+func New(position vector.Vector2D, w, h int, detect func(vector.Vector2D, float64) []*Cell) *Cell {
 	size := 5.0 + rand.Float64()*25.0
 	c := &Cell{
 		position:       position,
@@ -65,6 +68,8 @@ func New(position vector.Vector2D, w, h int) *Cell {
 		maxVelocity:    maxVelocity(size),
 		lastEnergyBurn: 0,
 		lastGrowth:     int(rand.Int31n(1000)),
+		detect:         detect,
+		neighbors:      []*Cell{},
 	}
 	return c
 }

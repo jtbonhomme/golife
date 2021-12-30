@@ -12,6 +12,8 @@ func (c *Cell) Accelerate(acceleration vector.Vector2D) {
 }
 
 func (c *Cell) Update(counter int) {
+	c.neighbors = c.detect(c.position, 250)
+
 	if counter > c.lastEnergyBurn+150 {
 		c.energy -= 2
 		c.lastEnergyBurn = counter
@@ -35,6 +37,13 @@ func (c *Cell) Update(counter int) {
 	c.UpdateVelocity()
 	c.UpdateOrientation()
 	c.UpdatePosition()
+
+	// Eat smaller cells in the neighborood
+	for _, c1 := range c.neighbors {
+		if c1.ID() != c.ID() && c.Intersect(c1) && c.Size() > c1.Size()*1.1 {
+			c.Eat(c1)
+		}
+	}
 }
 
 // UpdateVelocity computes new velocity.

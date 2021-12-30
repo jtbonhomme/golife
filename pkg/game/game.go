@@ -58,7 +58,7 @@ func New(w, h, t int) *Game {
 		c := cell.New(vector.Vector2D{
 			X: float64(rand.Int31n(int32(w))),
 			Y: float64(rand.Int31n(int32(h))),
-		}, g.ScreenWidth, g.ScreenHeight)
+		}, g.ScreenWidth, g.ScreenHeight, g.Detect)
 		c.Debug(g.debug)
 		g.cells[c.ID()] = c
 	}
@@ -87,7 +87,6 @@ func (g *Game) resetTiles() {
 func (g *Game) Update() error {
 	g.counter++
 	g.resetTiles()
-	g.DetectCollision()
 	if len(g.cells) == 0 {
 		return fmt.Errorf("all cells are dead")
 	}
@@ -107,21 +106,6 @@ func (g *Game) Update() error {
 	}
 	g.gameDuration = time.Since(g.startTime).Round(time.Second)
 	return nil
-}
-
-func (g *Game) DetectCollision() {
-	for _, c1 := range g.cells {
-		for _, c2 := range g.cells {
-			if c1.ID() != c2.ID() && c1.Intersect(c2) {
-				if c1.Size() > c2.Size()*1.1 {
-					c1.Eat(c2)
-				} else if c1.Size()*1.1 < c2.Size() {
-					c2.Eat(c1)
-					continue
-				}
-			}
-		}
-	}
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
@@ -200,4 +184,17 @@ func (g *Game) drawTimeElapsed(screen *ebiten.Image) {
 		elapsedTextHeight+10,
 		color.Black,
 	)
+}
+
+// Detect returns all cells located in a radius from (x,y)
+func (g *Game) Detect(pos vector.Vector2D, radius float64) []*cell.Cell {
+	nearestCells := []*cell.Cell{}
+
+	for _, c := range g.cells {
+		if pos.SquareDistance(c.Position()) < radius*radius {
+			nearestCells = append(nearestCells, c)
+		}
+	}
+
+	return nearestCells
 }

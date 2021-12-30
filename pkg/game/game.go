@@ -46,31 +46,77 @@ func New(w, h int) *Game {
 	return g
 }
 
+func (g *Game) removeCell(i int) error {
+	if i < 0 || i >= len(g.cells) {
+		return fmt.Errorf("incorrect index: %d", i)
+	}
+	g.cells = append(g.cells[:i], g.cells[i:]...)
+	return nil
+}
+
 func (g *Game) Update() error {
 	g.counter++
-	for _, c := range g.cells {
-		c.Update()
+	for i, c := range g.cells {
+		if c.IsDead() {
+			err := g.removeCell(i)
+			if err != nil {
+				return fmt.Errorf("cannot remove cell index: %d: %w", i, err)
+			}
+			continue
+		}
+		c.Update(g.counter)
 	}
+
+	g.DetectCollision()
+
 	return nil
+}
+
+func (g *Game) DetectCollision() {
+	for i, c1 := range g.cells {
+		for j, c2 := range g.cells {
+			if c1.ID() != c2.ID() && c1.Intersect(c2) {
+				if c1.Size() > c2.Size()*1.1 {
+					c1.Eat(c2)
+					g.removeCell(j)
+				} else if c1.Size()*1.1 < c2.Size() {
+					c2.Eat(c1)
+					g.removeCell(i)
+					continue
+				}
+			}
+		}
+	}
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.White)
+	// draw first debug information
 	if g.debug {
-		ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f\nFPS: %0.2f\nCounter: %d", ebiten.CurrentTPS(), ebiten.CurrentFPS(), g.counter))
-		g.LinkAgents(screen, 250.0)
+		ebitenutil.DebugPrint(
+			screen,
+			fmt.Sprintf("TPS: %0.2f\nFPS: %0.2f\nCounter: %d\nCreatures: %d",
+				ebiten.CurrentTPS(),
+				ebiten.CurrentFPS(),
+				g.counter,
+				len(g.cells),
+			),
+		)
+		g.linkAgents(screen, 250.0)
 	}
-	// Draw elements on top of debug informations
+	// Draw elements on top of debug information
 	for _, c := range g.cells {
-		c.Draw(screen, g.counter, emptySubImage)
+		if !c.IsDead() {
+			c.Draw(screen, g.counter, emptySubImage)
+		}
 	}
 }
 
 // LinkAgents draws a line between two close agents
-func (g *Game) LinkAgents(screen *ebiten.Image, radius float64) {
+func (g *Game) linkAgents(screen *ebiten.Image, radius float64) {
 	for i, ci := range g.cells {
 		for j := i; j < len(g.cells); j++ {
-			if ci.Position().Distance(g.cells[j].Position()) < radius {
+			if ci.Position().Distance(g.cells[j].Position()) < radius && !g.cells[j].IsDead() {
 				// Draw line between agents
 				ebitenutil.DrawLine(
 					screen,
@@ -83,6 +129,8 @@ func (g *Game) LinkAgents(screen *ebiten.Image, radius float64) {
 	}
 }
 
-func (g *Game) Layout(outsideWidth, outsideHeight int) (w, h int) {
+// Layout takes the outside size (e.g., the window size) and returns the (logical) screen size.
+// If you don't have to adjust the screen size with the outside size, just return a fixed size.
+func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	return g.ScreenWidth, g.ScreenHeight
 }

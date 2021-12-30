@@ -11,7 +11,16 @@ func (c *Cell) Accelerate(acceleration vector.Vector2D) {
 	c.acceleration = acceleration
 }
 
-func (c *Cell) Update() {
+func (c *Cell) Update(counter int) {
+	if c.lastEnergyBurn > counter+50 {
+		c.energy -= 10
+	}
+
+	if c.energy <= 0 {
+		c.energy = 0
+		c.Kill()
+		return
+	}
 	acceleration := vector.Vector2D{
 		X: math.Cos(c.orientation),
 		Y: math.Sin(c.orientation),

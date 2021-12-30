@@ -22,7 +22,7 @@ func main() {
 	g := game.New(ScreenWidth, ScreenHeight)
 
 	ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
-	ebiten.SetWindowTitle("Vector (Ebiten Demo)")
+	ebiten.SetWindowTitle("golife (jtbonhomme@gmail.com)")
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)
 	}

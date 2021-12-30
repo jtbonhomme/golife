@@ -23,6 +23,7 @@ const (
 
 type Cell struct {
 	size        float64
+	energy      float64
 	rnd10       int32
 	id          uuid.UUID
 	orientation float64 // theta (radian)
@@ -35,7 +36,10 @@ type Cell struct {
 	screenWidth  float64
 	screenHeight float64
 
-	debug bool
+	debug  bool
+	isDead bool
+
+	lastEnergyBurn int
 }
 
 func maxVelocity(size float64) float64 {
@@ -49,20 +53,31 @@ func maxVelocity(size float64) float64 {
 func New(position vector.Vector2D, w, h int) *Cell {
 	size := 5.0 + rand.Float64()*45.0
 	c := &Cell{
-		position:     position,
-		orientation:  rand.Float64() * 2 * math.Pi,
-		size:         size,
-		rnd10:        rand.Int31n(10),
-		id:           uuid.New(),
-		screenWidth:  float64(w),
-		screenHeight: float64(h),
-		maxVelocity:  maxVelocity(size),
+		position:       position,
+		orientation:    rand.Float64() * 2 * math.Pi,
+		size:           size,
+		energy:         50.0,
+		rnd10:          rand.Int31n(10),
+		id:             uuid.New(),
+		screenWidth:    float64(w),
+		screenHeight:   float64(h),
+		maxVelocity:    maxVelocity(size),
+		lastEnergyBurn: 0,
 	}
 	return c
 }
 
 func (c *Cell) Debug(state bool) {
 	c.debug = state
+}
+
+func (c *Cell) IsDead() bool {
+	return c.isDead
+}
+
+func (c *Cell) Kill() {
+	c.isDead = true
+	c.energy = 0
 }
 
 func maxCounter(index, rnd10 int) int {
@@ -202,12 +217,13 @@ func (c *Cell) DrawBodyBoundaryBox(screen *ebiten.Image) {
 	)
 }
 
-// String displays physic body information as a string.
+// String displays cell information as a string.
 func (c *Cell) String() string {
-	return fmt.Sprintf("pos [%d, %d]\nsize [%d] orient %0.2f rad (%0.0f °)\nvel {%0.2f %0.2f} acc {%0.2f %0.2f}",
+	return fmt.Sprintf("pos [%d, %d]\nsize [%d] energy [%d]\norient %0.2f rad (%0.0f °)\nvel {%0.2f %0.2f} acc {%0.2f %0.2f}",
 		int(c.position.X),
 		int(c.position.Y),
 		int(c.size),
+		int(c.energy),
 		c.orientation,
 		c.orientation*180/math.Pi,
 		c.velocity.X,
@@ -216,7 +232,26 @@ func (c *Cell) String() string {
 		c.acceleration.Y)
 }
 
-// ID displays physic body unique ID.
+// Eat absorb another cell.
+func (c *Cell) Eat(c2 *Cell) {
+	c.energy += c2.Energy() * 0.5
+	if c.energy > 100.0 {
+		c.energy = 100.0
+	}
+	c2.Kill()
+}
+
+// Size return cell size.
+func (c *Cell) Size() float64 {
+	return c.size
+}
+
+// Energy return cell energy.
+func (c *Cell) Energy() float64 {
+	return c.energy
+}
+
+// ID displays cell unique ID.
 func (c *Cell) ID() string {
 	return c.id.String()
 }

@@ -8,6 +8,11 @@ It presents autonomous organism with inner properties and behavior (hunter or pr
 
 ![](screenshot.png)
 
+## Presentation
+
+`golife` creatures design is inspired from (Otoro's creatures)[https://blog.otoro.net/2015/05/07/creatures-avoiding-planks/].
+The main goal is to understand how neural networks and genetic algorithms work with a concrete use case.
+
 ## Features
 
 * [x] A cell can move

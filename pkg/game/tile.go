@@ -1,27 +1,21 @@
 package game
 
 type Tile struct {
-	x         int
-	y         int
-	width     float64
-	height    float64
-	cellCount int
+	x      int
+	y      int
+	width  float64
+	height float64
+	cells  []string
 }
 
 func (t *Tile) ResetCellCount() {
-	t.cellCount = 0
+	t.cells = []string{}
 }
 
-func (t *Tile) IncCellCount() {
-	t.cellCount++
+func (t *Tile) AddCell(id string) {
+	t.cells = append(t.cells, id)
 }
 
 func (t *Tile) CellCount() int {
-	return t.cellCount
-}
-
-func (t *Tile) DecCellCount() {
-	if t.cellCount > 0 {
-		t.cellCount--
-	}
+	return len(t.cells)
 }

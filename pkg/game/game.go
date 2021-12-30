@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math"
 	"math/rand"
 	"time"
 
@@ -14,7 +15,7 @@ import (
 )
 
 const (
-	nCells int = 30
+	nCells int = 40
 )
 
 var (
@@ -28,16 +29,25 @@ func init() {
 }
 
 type Game struct {
-	counter      int
-	cells        []*cell.Cell
-	ScreenWidth  int
-	ScreenHeight int
-	debug        bool
+	counter       int
+	cells         []*cell.Cell
+	tiles         [][]*Tile
+	TileDimension int
+	ScreenWidth   int
+	ScreenHeight  int
+	debug         bool
 }
 
-func New(w, h int) *Game {
-	g := &Game{counter: 0, ScreenWidth: w, ScreenHeight: h, debug: true}
+func New(w, h, t int) *Game {
+	g := &Game{
+		counter:       0,
+		ScreenWidth:   w,
+		ScreenHeight:  h,
+		TileDimension: t,
+		debug:         true,
+	}
 	g.cells = []*cell.Cell{}
+	g.tiles = [][]*Tile{}
 	for i := 0; i < nCells; i++ {
 		c := cell.New(vector.Vector2D{
 			X: float64(rand.Int31n(int32(w))),
@@ -46,7 +56,13 @@ func New(w, h int) *Game {
 		c.Debug(g.debug)
 		g.cells = append(g.cells, c)
 	}
-
+	g.tiles = make([][]*Tile, g.ScreenWidth/g.TileDimension)
+	for i := 0; i < g.ScreenWidth/g.TileDimension; i++ {
+		g.tiles[i] = make([]*Tile, g.ScreenHeight/g.TileDimension)
+		for j := 0; j < g.ScreenHeight/g.TileDimension; j++ {
+			g.tiles[i][j] = &Tile{x: i, y: j, width: float64(g.TileDimension), height: float64(g.TileDimension), cellCount: 0}
+		}
+	}
 	return g
 }
 
@@ -58,8 +74,17 @@ func (g *Game) removeCell(i int) error {
 	return nil
 }
 
+func (g *Game) resetTiles() {
+	for i := 0; i < g.ScreenWidth/g.TileDimension; i++ {
+		for j := 0; j < g.ScreenHeight/g.TileDimension; j++ {
+			g.tiles[i][j].ResetCellCount()
+		}
+	}
+}
+
 func (g *Game) Update() error {
 	g.counter++
+	g.resetTiles()
 	g.DetectCollision()
 	if len(g.cells) == 0 {
 		return fmt.Errorf("all cells are dead")
@@ -74,6 +99,12 @@ func (g *Game) Update() error {
 			}
 			continue
 		}
+		// update tile count
+		x := int(math.Floor(c.Position().X / float64(g.TileDimension)))
+		y := int(math.Floor(c.Position().Y / float64(g.TileDimension)))
+		g.tiles[x][y].IncCellCount()
+
+		// update cell state
 		c.Update(g.counter)
 	}
 	return nil
@@ -95,9 +126,18 @@ func (g *Game) DetectCollision() {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	// blank screen
 	screen.Fill(color.White)
 	// draw first debug information
 	if g.debug {
+		for i := 0; i < g.ScreenWidth/g.TileDimension; i++ {
+			for j := 0; j < g.ScreenHeight/g.TileDimension; j++ {
+				if g.tiles[i][j].CellCount() > 0 {
+					ebitenutil.DrawRect(screen, float64(i*g.TileDimension), float64(j*g.TileDimension), float64(g.TileDimension), float64(g.TileDimension), color.Gray16{0xdddd})
+				}
+			}
+		}
+
 		ebitenutil.DebugPrint(
 			screen,
 			fmt.Sprintf("TPS: %0.2f\nFPS: %0.2f\nCounter: %d\nCreatures: %d",

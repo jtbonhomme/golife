@@ -11,15 +11,16 @@ import (
 )
 
 const (
-	ScreenWidth  int = 1280
-	ScreenHeight int = 720
+	TileDimension int = 80
+	ScreenWidth   int = 16 * TileDimension // 1280
+	ScreenHeight  int = 9 * TileDimension  // 720
 )
 
 func main() {
 	log := logrus.New()
 	log.Infof("golife version: %#v", version.Read())
 	os.Setenv("EBITEN_SCREENSHOT_KEY", "s")
-	g := game.New(ScreenWidth, ScreenHeight)
+	g := game.New(ScreenWidth, ScreenHeight, TileDimension)
 
 	ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
 	ebiten.SetWindowTitle("golife (jtbonhomme@gmail.com)")

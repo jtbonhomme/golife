@@ -68,14 +68,14 @@ func (c *Cell) UpdateOrientation() {
 func (c *Cell) UpdatePosition() {
 	c.position.Add(c.velocity)
 
-	if c.position.X > c.screenWidth {
+	if c.position.X >= c.screenWidth-1.0 {
 		c.position.X = 0
 	} else if c.position.X < 0 {
-		c.position.X = c.screenWidth
+		c.position.X = c.screenWidth - 1.0
 	}
-	if c.position.Y > c.screenHeight {
+	if c.position.Y >= c.screenHeight-1.0 {
 		c.position.Y = 0
 	} else if c.position.Y < 0 {
-		c.position.Y = c.screenHeight
+		c.position.Y = c.screenHeight - 1.0
 	}
 }

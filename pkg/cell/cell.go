@@ -11,32 +11,52 @@ import (
 	color "github.com/lucasb-eyer/go-colorful"
 )
 
+const (
+	cellMaxVelocity float64 = 1.1
+)
+
 type Cell struct {
 	size        float64
 	rnd10       int32
-	velocity    vector.Vector2D
-	maxVelocity float64
+	id          uuid.UUID
+	orientation float64 // theta (radian)
 
-	ScreenWidth  float64
-	ScreenHeight float64
-
-	acceleration vector.Vector2D
 	position     vector.Vector2D
-	id           uuid.UUID
-	orientation  float64 // theta (radian)
+	velocity     vector.Vector2D
+	maxVelocity  float64
+	acceleration vector.Vector2D
+
+	screenWidth  float64
+	screenHeight float64
+
+	debug bool
+}
+
+func maxVelocity(size float64) float64 {
+	vel := 18 / size
+	if vel > cellMaxVelocity {
+		vel = cellMaxVelocity
+	}
+	return vel
 }
 
 func New(position vector.Vector2D, w, h int) *Cell {
+	size := 5.0 + rand.Float64()*45.0
 	c := &Cell{
 		position:     position,
 		orientation:  rand.Float64() * 2 * math.Pi,
-		size:         5.0 + rand.Float64()*45.0,
+		size:         size,
 		rnd10:        rand.Int31n(10),
 		id:           uuid.New(),
-		ScreenWidth:  float64(w),
-		ScreenHeight: float64(h),
+		screenWidth:  float64(w),
+		screenHeight: float64(h),
+		maxVelocity:  maxVelocity(size),
 	}
 	return c
+}
+
+func (c *Cell) Debug(state bool) {
+	c.debug = state
 }
 
 func maxCounter(index, rnd10 int) int {
@@ -91,7 +111,7 @@ func (c *Cell) drawCellBody(screen *ebiten.Image, counter int, emptySubImage *eb
 	screen.DrawTriangles(vs, is, emptySubImage, op)
 }
 
-func (c *Cell) drawEyes(screen *ebiten.Image, dist, side, size, bg float64, counter int, emptySubImage *ebiten.Image) {
+func (c *Cell) drawEyes(screen *ebiten.Image, dist, side, size, bg float64, emptySubImage *ebiten.Image) {
 	var path evector.Path
 
 	randomizedFloat64 := func(in float64) float64 {
@@ -118,8 +138,8 @@ func (c *Cell) drawEyes(screen *ebiten.Image, dist, side, size, bg float64, coun
 
 func (c *Cell) Draw(screen *ebiten.Image, counter int, emptySubImage *ebiten.Image) {
 	c.drawCellBody(screen, counter, emptySubImage)
-	c.drawEyes(screen, c.size*0.9, -1, c.size*0.1, 0xff, counter, emptySubImage)
-	c.drawEyes(screen, c.size*0.9, -1, c.size*0.05, 0x00, counter, emptySubImage)
-	c.drawEyes(screen, c.size*0.9, 1, c.size*0.1, 0xff, counter, emptySubImage)
-	c.drawEyes(screen, c.size*0.9, 1, c.size*0.05, 0x00, counter, emptySubImage)
+	c.drawEyes(screen, c.size*0.9, -1, c.size*0.1, 0xff, emptySubImage)
+	c.drawEyes(screen, c.size*0.9, -1, c.size*0.05, 0x00, emptySubImage)
+	c.drawEyes(screen, c.size*0.9, 1, c.size*0.1, 0xff, emptySubImage)
+	c.drawEyes(screen, c.size*0.9, 1, c.size*0.05, 0x00, emptySubImage)
 }

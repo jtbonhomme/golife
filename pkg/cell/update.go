@@ -12,22 +12,14 @@ func (c *Cell) Accelerate(acceleration vector.Vector2D) {
 }
 
 func (c *Cell) Update() {
-	acceleration := vector.Vector2D{}
-	acceleration.Add(c.move())
-
+	acceleration := vector.Vector2D{
+		X: math.Cos(c.orientation),
+		Y: math.Sin(c.orientation),
+	}
 	c.Accelerate(acceleration)
 	c.UpdateVelocity()
 	c.UpdateOrientation()
 	c.UpdatePosition()
-}
-
-func (c *Cell) move() vector.Vector2D {
-	result := vector.Vector2D{
-		X: 1,
-		Y: 1,
-	}
-
-	return result
 }
 
 // UpdateVelocity computes new velocity.
@@ -61,14 +53,14 @@ func (c *Cell) UpdateOrientation() {
 func (c *Cell) UpdatePosition() {
 	c.position.Add(c.velocity)
 
-	if c.position.X > c.ScreenWidth {
+	if c.position.X > c.screenWidth {
 		c.position.X = 0
 	} else if c.position.X < 0 {
-		c.position.X = c.ScreenWidth
+		c.position.X = c.screenWidth
 	}
-	if c.position.Y > c.ScreenHeight {
+	if c.position.Y > c.screenHeight {
 		c.position.Y = 0
 	} else if c.position.Y < 0 {
-		c.position.Y = c.ScreenHeight
+		c.position.Y = c.screenHeight
 	}
 }

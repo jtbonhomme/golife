@@ -11,6 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/jtbonhomme/golife/internal/vector"
 	"github.com/jtbonhomme/golife/pkg/cell"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -48,9 +49,9 @@ func New(w, h int) *Game {
 
 func (g *Game) removeCell(i int) error {
 	if i < 0 || i >= len(g.cells) {
-		return fmt.Errorf("incorrect index: %d", i)
+		return fmt.Errorf("index out of bound: %d", i)
 	}
-	g.cells = append(g.cells[:i], g.cells[i:]...)
+	g.cells = append(g.cells[:i], g.cells[i+1:]...)
 	return nil
 }
 
@@ -78,10 +79,16 @@ func (g *Game) DetectCollision() {
 			if c1.ID() != c2.ID() && c1.Intersect(c2) {
 				if c1.Size() > c2.Size()*1.1 {
 					c1.Eat(c2)
-					g.removeCell(j)
+					err := g.removeCell(j)
+					if err != nil {
+						log.Errorf("removal cell %d failed: %w", j, err)
+					}
 				} else if c1.Size()*1.1 < c2.Size() {
 					c2.Eat(c1)
-					g.removeCell(i)
+					err := g.removeCell(i)
+					if err != nil {
+						log.Errorf("removal cell %d failed: %w", i, err)
+					}
 					continue
 				}
 			}

@@ -3,57 +3,79 @@ package cell
 import (
 	"math"
 	"math/rand"
-	"time"
 
+	"github.com/google/uuid"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
-	"github.com/jtbonhomme/golife/internal/point"
+	evector "github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/jtbonhomme/golife/internal/vector"
 	color "github.com/lucasb-eyer/go-colorful"
-	log "github.com/sirupsen/logrus"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
+type Cell struct {
+	size        float64
+	rnd10       int32
+	velocity    vector.Vector2D
+	maxVelocity float64
+
+	ScreenWidth  float64
+	ScreenHeight float64
+
+	acceleration vector.Vector2D
+	position     vector.Vector2D
+	id           uuid.UUID
+	orientation  float64 // theta (radian)
+}
+
+func New(position vector.Vector2D, w, h int) *Cell {
+	c := &Cell{
+		position:     position,
+		orientation:  rand.Float64() * 2 * math.Pi,
+		size:         5.0 + rand.Float64()*45.0,
+		rnd10:        rand.Int31n(10),
+		id:           uuid.New(),
+		ScreenWidth:  float64(w),
+		ScreenHeight: float64(h),
+	}
+	return c
 }
 
 func maxCounter(index, rnd10 int) int {
 	return 50 + rnd10 + (25*index+rnd10)%64
 }
 
-func angularToCartesian(dist, direction float64) (x, y float32) {
-	return float32(dist * math.Cos(direction)), float32(dist * math.Sin(direction))
+func angularToCartesian(dist, orientation float64) (x, y float32) {
+	return float32(dist * math.Cos(orientation)), float32(dist * math.Sin(orientation))
 }
 
-func addVector(center point.Point, dist, direction float64) (x, y float32) {
-	acX, acY := angularToCartesian(dist, direction)
-	return float32(center.X) + acX, float32(center.Y) + acY
+func addVector(position vector.Vector2D, dist, orientation float64) (x, y float32) {
+	acX, acY := angularToCartesian(dist, orientation)
+	return float32(position.X) + acX, float32(position.Y) + acY
 }
 
-func (c *Cell) drawCellBody(screen *ebiten.Image, center point.Point, direction, size float64, counter int, emptySubImage *ebiten.Image) {
-	var path vector.Path
+func (c *Cell) drawCellBody(screen *ebiten.Image, counter int, emptySubImage *ebiten.Image) {
+	var path evector.Path
 	npoints := 16
 
 	indexToDirection := func(i int) float64 {
-		return direction - float64(2*i+1)*math.Pi/float64(npoints)
+		return c.orientation - float64(2*i+1)*math.Pi/float64(npoints)
 	}
 	indexToDist := func(i, counter int) float64 {
-		return size + size*0.1*math.Sin(float64(counter)*2*math.Pi/float64(maxCounter(i, int(c.rnd10))))
+		return c.size + c.size*0.1*math.Sin(float64(counter)*2*math.Pi/float64(maxCounter(i, int(c.rnd10))))
 	}
 
 	for i := 0; i <= npoints; i++ {
 		if i == 0 {
-			path.MoveTo(addVector(center, indexToDist(i, counter), indexToDirection(i)))
+			path.MoveTo(addVector(c.position, indexToDist(i, counter), indexToDirection(i)))
 			continue
 		}
-		cpx0, cpy0 := addVector(center, indexToDist(i, counter), indexToDirection(i-1)-math.Pi/16)
-		cpx1, cpy1 := addVector(center, indexToDist(i, counter), indexToDirection(i)+math.Pi/16)
-		cpx2, cpy2 := addVector(center, indexToDist(i, counter), indexToDirection(i))
+		cpx0, cpy0 := addVector(c.position, indexToDist(i, counter), indexToDirection(i-1)-math.Pi/16)
+		cpx1, cpy1 := addVector(c.position, indexToDist(i, counter), indexToDirection(i)+math.Pi/16)
+		cpx2, cpy2 := addVector(c.position, indexToDist(i, counter), indexToDirection(i))
 		path.CubicTo(cpx0, cpy0, cpx1, cpy1, cpx2, cpy2)
 	}
 
 	// Get the color (120° is green, 0° is red)
 	cellColor := color.HSLuv(c.size*360/50, 1, 0.5)
-	log.Infof("cell size %f -> %#v", c.size, cellColor)
 
 	op := &ebiten.DrawTrianglesOptions{
 		FillRule: ebiten.EvenOdd,
@@ -62,23 +84,23 @@ func (c *Cell) drawCellBody(screen *ebiten.Image, center point.Point, direction,
 	for i := range vs {
 		vs[i].SrcX = 1
 		vs[i].SrcY = 1
-		vs[i].ColorR = float32(cellColor.R) // / float32(0xff)
-		vs[i].ColorG = float32(cellColor.G) // / float32(0xff)
-		vs[i].ColorB = float32(cellColor.B) // / float32(0xff)
+		vs[i].ColorR = float32(cellColor.R)
+		vs[i].ColorG = float32(cellColor.G)
+		vs[i].ColorB = float32(cellColor.B)
 	}
 	screen.DrawTriangles(vs, is, emptySubImage, op)
 }
 
-func (c *Cell) drawEyes(screen *ebiten.Image, center point.Point, direction, dist, side, size, bg float64, counter int, emptySubImage *ebiten.Image) {
-	var path vector.Path
+func (c *Cell) drawEyes(screen *ebiten.Image, dist, side, size, bg float64, counter int, emptySubImage *ebiten.Image) {
+	var path evector.Path
 
 	randomizedFloat64 := func(in float64) float64 {
 		return in + rand.Float64()*2
 	}
 
-	cpx0, cpy0 := addVector(center, dist-randomizedFloat64(size), direction+side*math.Pi/randomizedFloat64(12))
+	cpx0, cpy0 := addVector(c.position, dist-randomizedFloat64(size), c.orientation+side*math.Pi/randomizedFloat64(12))
 
-	path.Arc(cpx0, cpy0, float32(size), float32(0), float32(2*math.Pi), vector.Clockwise)
+	path.Arc(cpx0, cpy0, float32(size), float32(0), float32(2*math.Pi), evector.Clockwise)
 
 	op := &ebiten.DrawTrianglesOptions{
 		FillRule: ebiten.EvenOdd,
@@ -94,27 +116,10 @@ func (c *Cell) drawEyes(screen *ebiten.Image, center point.Point, direction, dis
 	screen.DrawTriangles(vs, is, emptySubImage, op)
 }
 
-type Cell struct {
-	center    point.Point
-	direction float64
-	size      float64
-	rnd10     int32
-}
-
-func New(center point.Point) *Cell {
-	c := &Cell{
-		center:    center,
-		direction: rand.Float64() * 2 * math.Pi,
-		size:      5.0 + rand.Float64()*45.0,
-		rnd10:     rand.Int31n(10),
-	}
-	return c
-}
-
-func (c *Cell) DrawCell(screen *ebiten.Image, counter int, emptySubImage *ebiten.Image) {
-	c.drawCellBody(screen, c.center, c.direction, c.size, counter, emptySubImage)
-	c.drawEyes(screen, c.center, c.direction, c.size*0.9, -1, c.size*0.1, 0xff, counter, emptySubImage)
-	c.drawEyes(screen, c.center, c.direction, c.size*0.9, -1, c.size*0.05, 0x00, counter, emptySubImage)
-	c.drawEyes(screen, c.center, c.direction, c.size*0.9, 1, c.size*0.1, 0xff, counter, emptySubImage)
-	c.drawEyes(screen, c.center, c.direction, c.size*0.9, 1, c.size*0.05, 0x00, counter, emptySubImage)
+func (c *Cell) Draw(screen *ebiten.Image, counter int, emptySubImage *ebiten.Image) {
+	c.drawCellBody(screen, counter, emptySubImage)
+	c.drawEyes(screen, c.size*0.9, -1, c.size*0.1, 0xff, counter, emptySubImage)
+	c.drawEyes(screen, c.size*0.9, -1, c.size*0.05, 0x00, counter, emptySubImage)
+	c.drawEyes(screen, c.size*0.9, 1, c.size*0.1, 0xff, counter, emptySubImage)
+	c.drawEyes(screen, c.size*0.9, 1, c.size*0.05, 0x00, counter, emptySubImage)
 }

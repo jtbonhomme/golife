@@ -9,7 +9,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/jtbonhomme/golife/internal/point"
+	"github.com/jtbonhomme/golife/internal/vector"
 	"github.com/jtbonhomme/golife/pkg/cell"
 )
 
@@ -26,15 +26,19 @@ func init() {
 type Game struct {
 	counter      int
 	c            []*cell.Cell
-	screenWidth  int
-	screenHeight int
+	ScreenWidth  int
+	ScreenHeight int
 }
 
 func New(w, h int) *Game {
-	g := &Game{counter: 0, screenWidth: w, screenHeight: h}
+	g := &Game{counter: 0, ScreenWidth: w, ScreenHeight: h}
 	g.c = []*cell.Cell{}
 	for i := 0; i < 10; i++ {
-		g.c = append(g.c, cell.New(point.Point{X: float64(rand.Int31n(int32(w))), Y: float64(rand.Int31n(int32(h)))}))
+		c := cell.New(vector.Vector2D{
+			X: float64(rand.Int31n(int32(w))),
+			Y: float64(rand.Int31n(int32(h))),
+		}, g.ScreenWidth, g.ScreenHeight)
+		g.c = append(g.c, c)
 	}
 
 	return g
@@ -42,18 +46,21 @@ func New(w, h int) *Game {
 
 func (g *Game) Update() error {
 	g.counter++
+	for _, c := range g.c {
+		c.Update()
+	}
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.White)
 	for _, c := range g.c {
-		c.DrawCell(screen, g.counter, emptySubImage)
+		c.Draw(screen, g.counter, emptySubImage)
 	}
 
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f\nFPS: %0.2f\nCounter: %d", ebiten.CurrentTPS(), ebiten.CurrentFPS(), g.counter))
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (w, h int) {
-	return g.screenWidth, g.screenHeight
+	return g.ScreenWidth, g.ScreenHeight
 }

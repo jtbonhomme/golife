@@ -12,12 +12,12 @@ func (c *Cell) Accelerate(acceleration vector.Vector2D) {
 }
 
 func (c *Cell) Update(counter int) {
-	if c.lastEnergyBurn > counter+50 {
-		c.energy -= 10
+	if counter > c.lastEnergyBurn+150 {
+		c.energy -= 1
+		c.lastEnergyBurn = counter
 	}
 
 	if c.energy <= 0 {
-		c.energy = 0
 		c.Kill()
 		return
 	}

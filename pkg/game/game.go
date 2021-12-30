@@ -11,7 +11,10 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/jtbonhomme/golife/internal/vector"
 	"github.com/jtbonhomme/golife/pkg/cell"
-	log "github.com/sirupsen/logrus"
+)
+
+const (
+	nCells int = 20
 )
 
 var (
@@ -35,7 +38,7 @@ type Game struct {
 func New(w, h int) *Game {
 	g := &Game{counter: 0, ScreenWidth: w, ScreenHeight: h, debug: true}
 	g.cells = []*cell.Cell{}
-	for i := 0; i < 10; i++ {
+	for i := 0; i < nCells; i++ {
 		c := cell.New(vector.Vector2D{
 			X: float64(rand.Int31n(int32(w))),
 			Y: float64(rand.Int31n(int32(h))),
@@ -57,7 +60,13 @@ func (g *Game) removeCell(i int) error {
 
 func (g *Game) Update() error {
 	g.counter++
-	for i, c := range g.cells {
+	g.DetectCollision()
+	if len(g.cells) == 0 {
+		return fmt.Errorf("all cells are dead")
+	}
+
+	for i := len(g.cells) - 1; i >= 0; i-- {
+		c := g.cells[i]
 		if c.IsDead() {
 			err := g.removeCell(i)
 			if err != nil {
@@ -67,28 +76,17 @@ func (g *Game) Update() error {
 		}
 		c.Update(g.counter)
 	}
-
-	g.DetectCollision()
-
 	return nil
 }
 
 func (g *Game) DetectCollision() {
-	for i, c1 := range g.cells {
-		for j, c2 := range g.cells {
+	for _, c1 := range g.cells {
+		for _, c2 := range g.cells {
 			if c1.ID() != c2.ID() && c1.Intersect(c2) {
 				if c1.Size() > c2.Size()*1.1 {
 					c1.Eat(c2)
-					err := g.removeCell(j)
-					if err != nil {
-						log.Errorf("removal cell %d failed: %w", j, err)
-					}
 				} else if c1.Size()*1.1 < c2.Size() {
 					c2.Eat(c1)
-					err := g.removeCell(i)
-					if err != nil {
-						log.Errorf("removal cell %d failed: %w", i, err)
-					}
 					continue
 				}
 			}

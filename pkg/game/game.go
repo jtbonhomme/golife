@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	nCells int = 20
+	nCells int = 30
 )
 
 var (

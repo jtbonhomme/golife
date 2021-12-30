@@ -40,6 +40,7 @@ type Cell struct {
 	isDead bool
 
 	lastEnergyBurn int
+	lastGrowth     int
 }
 
 func maxVelocity(size float64) float64 {
@@ -51,7 +52,7 @@ func maxVelocity(size float64) float64 {
 }
 
 func New(position vector.Vector2D, w, h int) *Cell {
-	size := 5.0 + rand.Float64()*45.0
+	size := 5.0 + rand.Float64()*25.0
 	c := &Cell{
 		position:       position,
 		orientation:    rand.Float64() * 2 * math.Pi,
@@ -63,6 +64,7 @@ func New(position vector.Vector2D, w, h int) *Cell {
 		screenHeight:   float64(h),
 		maxVelocity:    maxVelocity(size),
 		lastEnergyBurn: 0,
+		lastGrowth:     int(rand.Int31n(1000)),
 	}
 	return c
 }

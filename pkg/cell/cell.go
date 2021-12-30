@@ -18,7 +18,9 @@ import (
 )
 
 const (
-	cellMaxVelocity float64 = 0.9
+	cellMaxForce           float64 = 0.3
+	cellMaxVelocity        float64 = 0.9
+	defaultDetectionRadius float64 = 175.0
 )
 
 type Cell struct {
@@ -42,8 +44,9 @@ type Cell struct {
 	lastEnergyBurn int
 	lastGrowth     int
 
-	detect    func(vector.Vector2D, float64) []*Cell
-	neighbors []*Cell
+	detect          func(vector.Vector2D, float64) []*Cell
+	neighbors       []*Cell
+	detectionRadius float64
 }
 
 func maxVelocity(size float64) float64 {
@@ -57,19 +60,20 @@ func maxVelocity(size float64) float64 {
 func New(position vector.Vector2D, w, h int, detect func(vector.Vector2D, float64) []*Cell) *Cell {
 	size := 5.0 + rand.Float64()*25.0
 	c := &Cell{
-		position:       position,
-		orientation:    rand.Float64() * 2 * math.Pi,
-		size:           size,
-		energy:         50.0,
-		rnd10:          rand.Int31n(10),
-		id:             uuid.New(),
-		screenWidth:    float64(w),
-		screenHeight:   float64(h),
-		maxVelocity:    maxVelocity(size),
-		lastEnergyBurn: 0,
-		lastGrowth:     int(rand.Int31n(1000)),
-		detect:         detect,
-		neighbors:      []*Cell{},
+		position:        position,
+		orientation:     rand.Float64() * 2 * math.Pi,
+		size:            size,
+		energy:          50.0,
+		rnd10:           rand.Int31n(10),
+		id:              uuid.New(),
+		screenWidth:     float64(w),
+		screenHeight:    float64(h),
+		maxVelocity:     maxVelocity(size),
+		lastEnergyBurn:  0,
+		lastGrowth:      int(rand.Int31n(1000)),
+		detect:          detect,
+		neighbors:       []*Cell{},
+		detectionRadius: defaultDetectionRadius,
 	}
 	return c
 }
@@ -293,7 +297,17 @@ func (c *Cell) IntersectMultiple(cells map[string]*Cell) (string, bool) {
 	return "", false
 }
 
-// Position returns physical body position.
+// Position returns cell position.
 func (c *Cell) Position() vector.Vector2D {
 	return c.position
+}
+
+// Velocity returns cell velocity.
+func (c *Cell) Velocity() vector.Vector2D {
+	return c.velocity
+}
+
+// DetectionRadius returns cell detection radius.
+func (c *Cell) DetectionRadius() float64 {
+	return c.detectionRadius
 }

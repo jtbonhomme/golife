@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"math"
 	"math/rand"
 	"time"
 
@@ -17,7 +16,7 @@ import (
 )
 
 const (
-	nCells int = 40
+	nCells int = 50
 )
 
 var (
@@ -97,9 +96,9 @@ func (g *Game) Update() error {
 			continue
 		}
 		// update tile count
-		x := int(math.Floor(c.Position().X / float64(g.TileDimension)))
-		y := int(math.Floor(c.Position().Y / float64(g.TileDimension)))
-		g.tiles[x][y].AddCell(c.ID())
+		// x := int(math.Floor(c.Position().X / float64(g.TileDimension)))
+		// y := int(math.Floor(c.Position().Y / float64(g.TileDimension)))
+		// g.tiles[x][y].AddCell(c.ID())
 
 		// update cell state
 		c.Update(g.counter)
@@ -113,20 +112,20 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.White)
 	// draw first debug information
 	if g.debug {
-		for i := 0; i < g.ScreenWidth/g.TileDimension; i++ {
-			for j := 0; j < g.ScreenHeight/g.TileDimension; j++ {
-				if g.tiles[i][j].CellCount() > 0 {
-					ebitenutil.DrawRect(
-						screen,
-						float64(i*g.TileDimension),
-						float64(j*g.TileDimension),
-						float64(g.TileDimension),
-						float64(g.TileDimension),
-						color.Gray16{0xeeee},
-					)
-				}
-			}
-		}
+		// for i := 0; i < g.ScreenWidth/g.TileDimension; i++ {
+		// 	for j := 0; j < g.ScreenHeight/g.TileDimension; j++ {
+		// 		if g.tiles[i][j].CellCount() > 0 {
+		// 			ebitenutil.DrawRect(
+		// 				screen,
+		// 				float64(i*g.TileDimension),
+		// 				float64(j*g.TileDimension),
+		// 				float64(g.TileDimension),
+		// 				float64(g.TileDimension),
+		// 				color.Gray16{0xeeee},
+		// 			)
+		// 		}
+		// 	}
+		// }
 
 		ebitenutil.DebugPrint(
 			screen,
@@ -137,7 +136,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				len(g.cells),
 			),
 		)
-		g.linkAgents(screen, 250.0)
+		g.linkCells(screen, 250.0)
 	}
 	// Draw elements on top of debug information
 	for _, c := range g.cells {
@@ -148,11 +147,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawTimeElapsed(screen)
 }
 
-// LinkAgents draws a line between two close agents
-func (g *Game) linkAgents(screen *ebiten.Image, radius float64) {
+// linkCells draws a line between two close agents
+func (g *Game) linkCells(screen *ebiten.Image, radius float64) {
 	for _, ci := range g.cells {
 		for _, cj := range g.cells {
-			if ci.ID() != cj.ID() && ci.Position().Distance(cj.Position()) < radius && !cj.IsDead() {
+			if ci.ID() != cj.ID() && ci.Position().Distance(cj.Position()) < ci.DetectionRadius() && !cj.IsDead() {
 				// Draw line between agents
 				ebitenutil.DrawLine(
 					screen,

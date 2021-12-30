@@ -1,18 +1,24 @@
 package cell
 
 import (
+	"fmt"
+	"image/color"
 	"math"
 	"math/rand"
 
 	"github.com/google/uuid"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/text"
 	evector "github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/jtbonhomme/golife/internal/fonts"
 	"github.com/jtbonhomme/golife/internal/vector"
-	color "github.com/lucasb-eyer/go-colorful"
+	colorful "github.com/lucasb-eyer/go-colorful"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
-	cellMaxVelocity float64 = 1.1
+	cellMaxVelocity float64 = 0.9
 )
 
 type Cell struct {
@@ -33,7 +39,7 @@ type Cell struct {
 }
 
 func maxVelocity(size float64) float64 {
-	vel := 18 / size
+	vel := 15 / size
 	if vel > cellMaxVelocity {
 		vel = cellMaxVelocity
 	}
@@ -95,7 +101,7 @@ func (c *Cell) drawCellBody(screen *ebiten.Image, counter int, emptySubImage *eb
 	}
 
 	// Get the color (120° is green, 0° is red)
-	cellColor := color.HSLuv(c.size*360/50, 1, 0.5)
+	cellColor := colorful.HSLuv(c.size*360/50, 1, 0.5)
 
 	op := &ebiten.DrawTrianglesOptions{
 		FillRule: ebiten.EvenOdd,
@@ -142,4 +148,110 @@ func (c *Cell) Draw(screen *ebiten.Image, counter int, emptySubImage *ebiten.Ima
 	c.drawEyes(screen, c.size*0.9, -1, c.size*0.05, 0x00, emptySubImage)
 	c.drawEyes(screen, c.size*0.9, 1, c.size*0.1, 0xff, emptySubImage)
 	c.drawEyes(screen, c.size*0.9, 1, c.size*0.05, 0x00, emptySubImage)
+	if c.debug {
+		c.DrawBodyBoundaryBox(screen)
+		msg := c.String()
+		textDim := text.BoundString(fonts.MonoSansRegularFont, msg)
+		textWidth := textDim.Max.X - textDim.Min.X
+		text.Draw(screen,
+			msg,
+			fonts.MonoSansRegularFont,
+			int(c.position.X)-textWidth/2,
+			int(c.position.Y+c.size+5),
+			color.Gray16{0x999f})
+	}
+}
+
+// DrawBodyBoundaryBox draws a box around the body, based on its dimension.
+func (c *Cell) DrawBodyBoundaryBox(screen *ebiten.Image) {
+	// Top boundary
+	ebitenutil.DrawLine(
+		screen,
+		c.position.X-c.size,
+		c.position.Y-c.size,
+		c.position.X+c.size,
+		c.position.Y-c.size,
+		color.Gray16{0xbbbb},
+	)
+	// Right boundary
+	ebitenutil.DrawLine(
+		screen,
+		c.position.X+c.size,
+		c.position.Y-c.size,
+		c.position.X+c.size,
+		c.position.Y+c.size,
+		color.Gray16{0xbbbb},
+	)
+	// Bottom boundary
+	ebitenutil.DrawLine(
+		screen,
+		c.position.X-c.size,
+		c.position.Y+c.size,
+		c.position.X+c.size,
+		c.position.Y+c.size,
+		color.Gray16{0xbbbb},
+	)
+	// Left boundary
+	ebitenutil.DrawLine(
+		screen,
+		c.position.X-c.size,
+		c.position.Y-c.size,
+		c.position.X-c.size,
+		c.position.Y+c.size,
+		color.Gray16{0xbbbb},
+	)
+}
+
+// String displays physic body information as a string.
+func (c *Cell) String() string {
+	return fmt.Sprintf("pos [%d, %d]\nsize [%d] orient %0.2f rad (%0.0f °)\nvel {%0.2f %0.2f} acc {%0.2f %0.2f}",
+		int(c.position.X),
+		int(c.position.Y),
+		int(c.size),
+		c.orientation,
+		c.orientation*180/math.Pi,
+		c.velocity.X,
+		c.velocity.Y,
+		c.acceleration.X,
+		c.acceleration.Y)
+}
+
+// ID displays physic body unique ID.
+func (c *Cell) ID() string {
+	return c.id.String()
+}
+
+// Intersect returns true if the physical body collide another one.
+// Collision is computed based on Axis-Aligned Bounding Boxes.
+// https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection
+func (c *Cell) Intersect(c2 *Cell) bool {
+	ax, ay := c.position.X, c.position.Y
+	aw, ah := c.size, c.size
+
+	bx, by := c2.position.X, c2.position.Y
+	bw, bh := c2.size, c2.size
+
+	return (ax < bx+bw && ay < by+bh) && (ax+aw > bx && ay+ah > by)
+}
+
+// IntersectMultiple checks if multiple physical bodies are colliding with the first
+func (c *Cell) IntersectMultiple(cells map[string]*Cell) (string, bool) {
+	for _, c2 := range cells {
+		if c.Intersect(c2) {
+			log.Warnf("%s [%d , %d] (%dx%d) intersect with %s [%d , %d] (%dx%d)",
+				c.ID(),
+				int(c.position.X), int(c.position.Y),
+				int(c.size), int(c.size),
+				c2.ID(),
+				int(c2.position.X), int(c2.position.Y),
+				int(c2.size), int(c2.size))
+			return c2.ID(), true
+		}
+	}
+	return "", false
+}
+
+// Position returns physical body position.
+func (c *Cell) Position() vector.Vector2D {
+	return c.position
 }

@@ -4,7 +4,9 @@ go 1.17
 
 require (
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210727001814-0db043d8d5be // indirect
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
+	github.com/hajimehoshi/ebiten v1.12.12 // indirect
 	github.com/hajimehoshi/ebiten/v2 v2.2.3 // indirect
 	github.com/jezek/xgb v0.0.0-20210312150743-0e0f116e1240 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect

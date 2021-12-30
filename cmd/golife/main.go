@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/sirupsen/logrus"
 
@@ -16,6 +18,7 @@ const (
 func main() {
 	log := logrus.New()
 	log.Infof("golife version: %#v", version.Read())
+	os.Setenv("EBITEN_SCREENSHOT_KEY", "s")
 	g := game.New(ScreenWidth, ScreenHeight)
 
 	ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
